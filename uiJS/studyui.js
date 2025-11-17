@@ -5,6 +5,17 @@
 
 import {addcloze_multichoice_s} from './cloze/multichoice.js';
 import {addcloze_numerical} from './cloze/numerical.js';
+import {addcloze_shortanswer} from './cloze/shortanswer.js';
+
+
+export {addcloze_multichoice_s};
+export {addcloze_numerical};
+export {addcloze_shortanswer};
+
+
+/*
+
+Examples 
 
 addcloze_multichoice_s('clozeform1', '#q1_dropdown', {
     options: ['uma opção correta', 'w.op1', 'w.op2', 'wop3'], 
@@ -27,3 +38,4 @@ addcloze_numerical('clozeform1', '#q2_input_number', {
     points: [100, 50, 0],
     feedback: ['num op correct', 'num partial correct', 'num wrong answer']
 })
+*/

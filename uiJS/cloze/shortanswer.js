@@ -5,7 +5,7 @@ import { scrambleIntegerList, maxsize, mk_tooltip_divs } from './tools.js';
 
 //TODO:
 // fazer addcloze_multichoice (sem _scramble)
-export function addcloze_multichoice_s(formname, divname, {
+export function addcloze_shortanswer(formname, divname, {
     options = ['uma opção correta', 'w.op1'], 
     feedback = ['op correct', 'op1 feedback'],
     points = [100, -10]} = {}) {    
@@ -49,7 +49,7 @@ export function addcloze_multichoice_s(formname, divname, {
     // select.classList.add("clozeitem")
 
     const maxWidth = maxsize(options);
-    select.style.width = (maxWidth + 40) + 'px';
+    select.style.width = (maxWidth + 20) + 'px';
 
     //small box at right where '✔' or '✖' appears;
     const validationBox = document.createElement('div');

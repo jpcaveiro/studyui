@@ -1,10 +1,12 @@
-
-
 library(stringr)
+library(htmltools)
 
 
-CLOZE_PATTERN = '\\{(\\d*):([^:]+):([^}]+)\\}'
 
+CLOZE_PATTERN <- '\\{(\\d*):([^:]+):([^}]+)\\}'
+
+#AN HTML document cannot have repetition of id labels:
+INSTRUCTION_ID_LABEL_COUNTER <- 1
 
 
 #cloze_match <- str_match_all(cloze_text, CLOZE_PATTERN)[[1]]
@@ -91,7 +93,7 @@ get_cloze_type <- function(tag) {
 
 
 
-parse_one_option <- function(opt_text) {
+parse_one_option <- function(opt_text, instruction_type) {
 
   #answer <- ""
   #feedback <- ""
@@ -147,7 +149,25 @@ parse_one_option <- function(opt_text) {
   }
   
   
-  o = list("percent"=percent, "answer"=answer, "feedback"=feedback)
+  if (instruction_type=="NUMERICAL") {
+    
+    # Catch tolerance
+    ans_parts <- text_hash_feedback <- strsplit(opt_text, ':')[[1]] #a list of one element that is a vector
+    if (length(ans_parts)==1) {
+      o = list("percent"=percent, "answer"=ans_parts[1], "feedback"=feedback, "tolerance"=0)  
+    } else if (length(ans_parts)==2) {
+      o = list("percent"=percent, "answer"=ans_parts[1], "feedback"=feedback, "tolerance"=ans_parts[2])  
+    } else {
+      stop("cloze: NUMERICAL option must be number:tolerance, at most once, and not other ':'.\n")  # Raise an error
+    }
+    
+  } else {
+    
+    o = list("percent"=percent, "answer"=answer, "feedback"=feedback)  
+    
+  }
+  
+  
 
   return(o)
 }
@@ -155,7 +175,7 @@ parse_one_option <- function(opt_text) {
 
 
 
-cloze2regexcloze <- function(cparts) {
+instruction2explicitclozeformat <- function(cparts) {
   #cparts is short for cloze_question_parts
   #cloze_question_parts <- list("points"=question_points, "type"=question_type, "options"=list_options)
   
@@ -171,10 +191,188 @@ cloze2regexcloze <- function(cparts) {
 
 
 
-cloze2html <- function(cloze_question_parts) {
+#' instruction2html
+#'
+#' @param cl - like `list("points"=question_points, "type"=question_type, "options"=list_options)`
+#' @param cloze_number
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+instruction2html <- function(cparts, cloze_number) {
+  
+  # cparts is like: 
+  #   list("points"=question_points, "type"=question_type, "options"=list_options)
+  # and
+  # each option in list_options is like
+  #   list("percent"=percent, "answer"=answer, "feedback"=feedback)
+  
   # Ver C:\Users\pedrocruz\Documents\GitHub\estatisticaaplicada\bookdown\interaction.R
   
-  return(cloze_question_parts)
+  
+  #Extract question_type
+  question_type <- cparts["type"]
+  
+  #New html id
+  # Como gerar labels div id="q1_dropdown" ou id="q2_input_number" 
+  # que não se podem repetir num documento HTML.
+  instruction_id <- paste0("q", INSTRUCTION_ID_LABEL_COUNTER, "_", question_type)
+  INSTRUCTION_ID_LABEL_COUNTER <<- INSTRUCTION_ID_LABEL_COUNTER + 1
+
+  
+  # list_options is like: list("percent"=percent, "answer"=answer, "feedback"=feedback)
+
+  #Extract each option answer
+  if (question_type == "NUMERICAL") {
+    
+    #Textual answers
+    answers <- sapply(cparts[["options"]], function(x) as.numeric(x[["answer"]]))
+    answers_html <- paste0("[",paste(answers, collapse=", "),"]")
+  
+    #Extract each option feedbacks
+    tolerances <- sapply(cparts[["options"]], function(x) as.numeric(x[["tolerance"]]))
+    tolerances_html <- paste0("[",paste(tolerances, collapse=", "),"]")
+
+    #Extract each option points
+    points <- sapply(cparts[["options"]], function(x) as.integer(x[["percent"]]))
+    #add 0 points when user inputs a value that is not on the list
+    points_html <- paste0("[",paste(points, collapse=", "),", 0]") 
+    
+
+    #Extract each option feedbacks
+    feedbacks <- sapply(cparts[["options"]], function(x) paste0("'",x[["feedback"]],"'"))
+    feedbacks_html <- paste0("[",paste(feedbacks, collapse=", "),", 'incorreto']")
+  
+  } else {
+    
+    #Textual answers
+    answers <- sapply(cparts[["options"]], function(x) paste0("'",x[["answer"]],"'"))
+    answers_html <- paste0("[",paste(answers, collapse=", "),"]")
+    
+    #Extract each option points
+    points <- sapply(cparts[["options"]], function(x) as.integer(x[["percent"]]))
+    points_html <- paste0("[",paste(points, collapse=", "),"]")
+  
+    #Extract each option feedbacks
+    feedbacks <- sapply(cparts[["options"]], function(x) paste0("'",x[["feedback"]],"'"))
+    feedbacks_html <- paste0("[",paste(feedbacks, collapse=", "),"]")
+    
+  }
+  
+
+  # ======= HTML ==============
+  # addcloze_multichoice_s('clozeform1', '#q3_dropdown', {
+  #   options: ['3uma opção correta', '3w.op1', '3w.op2', '3wop3'], 
+  #   feedback: ['3op correct', '3op1 feedback \\(\\sqrt{x}\\)', '3op2 feedback $\\sqrt{x}$', '3op3 feedback'],
+  #   points: [100,30,0,0]
+  # })
+  # 
+  # 
+  # 
+  # addcloze_numerical('clozeform1', '#q2_input_number', {
+  #   options: [120.1, 130.3], 
+  #   tolerance: [0.1, 1],
+  #   points: [100, 50, 0],
+  #   feedback: ['num op correct', 'num partial correct', 'num wrong answer']
+  # })
+  # 
+  # <form name="clozeform1">
+  #   <span>
+  #   Muito texto <div id="q1_dropdown" class="clozeitem"></div> e continuação de muito 
+  #   texto com <div id="q2_input_number" class="clozeitem"></div> e mais texto.</br>
+  #     Depois, responda a isto: <div id="q3_dropdown" class="clozeitem"></div>.
+  #   </span>
+  # </form>
+  #     
+      
+  
+  
+  if (question_type == "MULTICHOICE_S") {
+    
+    multichoice_s_template <- "
+addcloze_multichoice_s(\'${clozeformname}\', \'#${instruction_id}\', {
+ options: ${options}, 
+ feedback: ${feedbacks},
+ points: ${points}
+});
+"
+    #Debug
+    #print(answers_html)
+    #print(points_html)
+    #print(feedbacks_html)
+    
+    instruction_str <- stringr::str_interp(
+      multichoice_s_template,
+      list(instruction_id=instruction_id,
+           options=answers_html,
+           points=points_html,
+           feedbacks=feedbacks_html,
+           clozeformname=paste0("clozeform_",cloze_number)
+      )
+    )
+      
+    
+  } else if (question_type == "SHORTANSWER") {
+
+    #TODO: adicionar case
+    shortanswer_template <- "
+addcloze_shortanswer(\'${clozeformname}\', \'#${instruction_id}\', {
+ options: ${options}, 
+ feedback: ${feedbacks},
+ points: ${points}
+});
+"
+    #Debug
+    #print(answers_html)
+    #print(points_html)
+    #print(feedbacks_html)
+    
+    instruction_str <- stringr::str_interp(
+      shortanswer_template,
+      list(instruction_id=instruction_id,
+           options=answers_html,
+           points=points_html,
+           feedbacks=feedbacks_html,
+           clozeformname=paste0("clozeform_",cloze_number)
+      )
+    )
+    
+  } else if (question_type == "NUMERICAL") {
+    
+    #TODO: adicionar case
+    numerical_template <- "
+addcloze_numerical(\'${clozeformname}\', \'#${instruction_id}\', {
+ options: ${options}, 
+ feedback: ${feedbacks},
+ points: ${points}, 
+ tolerances: ${tolerances}
+});
+"
+    #Debug
+    #print(answers_html)
+    #print(points_html)
+    #print(feedbacks_html)
+    
+    instruction_str <- stringr::str_interp(
+      numerical_template,
+      list(instruction_id=instruction_id,
+           options=answers_html,
+           points=points_html,
+           feedbacks=feedbacks_html,
+           tolerances=tolerances_html,
+           clozeformname=paste0("clozeform_",cloze_number)
+      )
+    )
+    
+  }
+  
+  html_instruction_script <- stringr::str_interp(
+    "<div id=\'${instruction_id}\' class='clozeitem'></div>\n",
+    list(instruction_id=instruction_id)
+  )
+  
+  return(c(html_instruction_script, instruction_str))
   
 }
   
@@ -196,7 +394,7 @@ cloze2html <- function(cloze_question_parts) {
 #' \dontrun{print(parse_one_cloze_instruction(cloze_instruction, output="html"))}
 #' \dontrun{cloze_instruction <- "{1:MCV:%50%Jupiter#Partial Correct!~=Mars#Correct~Saturn#Wrong}"}
 #' \dontrun{print(parse_one_cloze_instruction(cloze_instruction, output="html"))}
-parse_one_cloze_instruction <- function(cloze_instruction, output="cloze") {
+parse_one_cloze_instruction <- function(cloze_instruction, cloze_number, output="cloze") {
   #    The function only checks the syntax of CLOZE expressions.
 
   #cloze_match <- str_match_all(cloze_instruction, CLOZE_PATTERN)[[1]]
@@ -251,7 +449,7 @@ parse_one_cloze_instruction <- function(cloze_instruction, output="cloze") {
     #print(opt_text)
     
     #TODO: protect from mistakes like "<no text>#Some feedback" 
-    o <- parse_one_option(opt_text)
+    o <- parse_one_option(opt_text, instruction_type=tag)
     
     list_options <- append(list_options, list(o))
   }
@@ -265,7 +463,7 @@ parse_one_cloze_instruction <- function(cloze_instruction, output="cloze") {
     next
   }
   
-  cloze_question_parts <- list("points"=question_points, "type"=question_type, "options"=list_options)
+  instruction_parts <- list("points"=question_points, "type"=question_type, "options"=list_options)
   #Debug
   #print(q)
 
@@ -273,12 +471,12 @@ parse_one_cloze_instruction <- function(cloze_instruction, output="cloze") {
   
   if (output=="originalcloze") {
     return(cloze_match[m,1])
-  } else if (output=="regexcloze") {
-    return(cloze2regexcloze(cloze_question_parts))
+  } else if (output=="explicitclozeformat") {
+    return(instruction2regexcloze(instruction_parts))
   } else if (output=="html") {
-    return(cloze2html(cloze_question_parts))
+    return(instruction2html(instruction_parts, cloze_number))
   } else {
-    return(cloze_question_parts)
+    return(instruction_parts)
   }
 }
  
@@ -288,15 +486,15 @@ parse_one_cloze_instruction <- function(cloze_instruction, output="cloze") {
 
 #' Transform text written in cloze format intro something else.
 #' 
-#'
 #' @param cloze_text 
+#' @param cloze_number
 #' @param output 
 #'
 #' @returns
 #' @export
 #'
 #' @examples
-cloze_transform <- function(cloze_text, output="originalcloze") {
+cloze_transform <- function(cloze_text, cloze_number=1, output="originalcloze") {
   matches_info <- gregexpr(CLOZE_PATTERN, cloze_text, perl = TRUE)[[1]]
   
   #print(matches_info[1])
@@ -306,6 +504,20 @@ cloze_transform <- function(cloze_text, output="originalcloze") {
   n_clozematches <- length(matches_info)
   cloze_start    <- c(matches_info)
   cloze_len      <- c(attr(matches_info,"match.length"))
+  
+  
+  if (output=="html") {
+    html_cloze_script <- paste(
+      "<script type='module'>",
+      "/*check cloze_transform funtion in R*/",
+      "import {addcloze_multichoice_s} from './uiJS/cloze/multichoice.js';",
+      "import {addcloze_numerical} from './uiJS/cloze/numerical.js';",
+      "import {addcloze_shortanswer} from './uiJS/cloze/shortanswer.js';",
+      "\n",
+      sep="\n")
+
+  }
+  
   
   
   cloze_text_parts <- c()
@@ -329,11 +541,21 @@ cloze_transform <- function(cloze_text, output="originalcloze") {
     }
     
     # call parse_one_cloze_instruction()
+    #TODO: fazer para outros outputs
+    
     if (output == "I") {
+      
       instruction <- paste(rep("I",cloze_len[m]),collapse="")
-    } else {
+      
+    } else if (output=="html") {
+      
       original_instruction <- substr(cloze_text, cloze_start[m], cloze_start[m]+cloze_len[m]-1)
-      instruction <- parse_one_cloze_instruction(original_instruction, output)
+      
+      instruction_pair <- parse_one_cloze_instruction(original_instruction, cloze_number, output)
+      
+      instruction <- instruction_pair[1] #<div id=q1_multichoice_s></div>
+      html_cloze_script <- c(html_cloze_script, instruction_pair[2]) #js call
+      
     }
     
     cloze_text_parts <- c(cloze_text_parts, instruction)
@@ -341,6 +563,7 @@ cloze_transform <- function(cloze_text, output="originalcloze") {
     #Prepare next
     text_pos <- cloze_start[m] + cloze_len[m]
   }
+  
   cloze_text_length <- nchar(cloze_text)
   if (text_pos<=cloze_text_length) {
     cloze_text_parts <- c(cloze_text_parts, substr(cloze_text, text_pos, cloze_text_length))
@@ -348,13 +571,77 @@ cloze_transform <- function(cloze_text, output="originalcloze") {
   
   
   
-  return(cloze_text_parts)
+  if (output=="html") {
+    html_cloze_script_txt <- paste0(paste0(html_cloze_script, collapse=""), "</script>\n", collapse="\n")
+    cloze_text_parts <- paste0(html_cloze_script_txt, paste0(cloze_text_parts, collapse=""), collapse="\n")
+  }
   
+  
+  
+  #A vector of text and instructions is returned.
+  return(cloze_text_parts)
 }
 
 
+
+
+#' cloze
+#'
+#' @param cloze_text 
+#' @param cloze_number - in html page, forms must have different identifiers
+#' @param output 
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+cloze <- function(cloze_text, cloze_number=1, output="html") {
+
+  #Convert from "md" to "html":
+  cloze_html <- pandoc::pandoc_convert(
+         text = cloze_text,
+         from = "markdown",
+         to = "html"
+  )
+   
+  
+  cloze_html <- paste(cloze_html, collapse="\n")
+  
+  #debug
+  #cat(class(cloze_html),"\n")
+  #cat(length(cloze_html),"\n")
+  
+  cloze_text_parts <- cloze_transform(cloze_html, cloze_number, output)
+  cloze_text <- paste0(cloze_text_parts, collapse = "")
+
+  if (output=="originalcloze") {
+    
+    #Return the original author string
+    cat(cloze_text,"\n")
+    
+  } else if (output=="html") {
+    
+    #debug
+    #cat(paste0("HTML text:\n", cloze_text, "\n"))
+    
+    HTML(cloze_text)
+    
+  } else if (output=="explicitclozeformat") {
+    
+    cat(cloze_text,"\n")
+    
+  } else {
+    
+    return(cloze_text)
+    
+  }
+
+}
+
+#debug(instruction2html)
+
              #0        1         2         3         4         5         6         7         8         9        10        11        12        13        14        15        16        17
              #12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
-cloze_text = "The capital of France is {:SHORTANSWER:=Paris#Correct!~*#Wrong answer}. The largest planet in the solar system is {1:MCV:%50%Jupiter#Partial Correct!~=Mars#Correct~Saturn#Wrong}."
-print(cloze_transform(cloze_text, output="regexcloze"))
+#cloze_text = "The largest planet in the solar system is {1:MULTICHOICE_S:%50%Jupiter#Partial Correct!~=Mars#Correct~Saturn#Wrong}. The capital of France is {:SHORTANSWER:=Paris#Correct!~*#Wrong answer}. "
+#print(cloze(cloze_text, cloze_number=1, output="html"))
 

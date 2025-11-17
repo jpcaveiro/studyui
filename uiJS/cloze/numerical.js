@@ -1,7 +1,7 @@
 //multichoice.js
 
 // Import modules
-import { scrambleIntegerList, maxsize, mk_tooltip_divs } from './tools.js';
+import { mk_tooltip_divs, isStrictNumber } from './tools.js';
 
 /*
 addcloze_numerical('q2_input_number', {
@@ -148,29 +148,45 @@ export function addcloze_numerical(formname, divname, {
     };
 
     inputElement.addEventListener('blur', function(event) {
-        console.log(event);
-
         event.preventDefault();
 
-        const inputValue = Number(inputElement.value);
+        //console.log(event);
 
-        update_numerical(inputValue);
+        const inputText = inputElement.value;
+
+        if (isStrictNumber(inputText)) {
+            const inputValue = Number(inputText);
+            update_numerical(inputValue);
+        }
+        
+
     });
 
     inputElement.addEventListener('keydown', function(event) {
 
-        console.log(event.key);
+        //event.preventDefault();
+
+        //console.log(event.key);
 
         const inputValue = Number(inputElement.value);
 
         if (event.key === 'enter') {
             // Prevent the default form submission behavior (if inside a form)
             event.preventDefault();
-            update_numerical(inputValue);
-        } else {
-            if (!/^\d*\.?\d*$/.test(inputValue)) {
-                event.target.value = inputValue.slice(0, -1);
+            
+            const inputText = inputElement.value;
+
+            if (isStrictNumber(inputText)) {
+                const inputValue = Number(inputText);
+                update_numerical(inputValue);
             }
+
+        } else {
+
+            if (! /^\d*\.?\d*$/.test(inputElement.value) ) {
+                event.target.value = ""; //inputElement.value.slice(0, -1);
+            }
+
         }
     });
 

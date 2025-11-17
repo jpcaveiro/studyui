@@ -1,0 +1,132 @@
+---
+title: "StudyUI Demonstration in quarto files"
+format: html
+include-in-header:
+  text: |
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-Script">
+      MathJax = {
+        tex: {
+          inlineMath: [['\(', '\)'], ['$', '$']], // Define inline delimiters
+          displayMath: [['$$', '$$'], ['\\[', '\\]']] // Display delimiters
+        }
+      };
+    </script>
+    <link rel='stylesheet' href='./uiJS/style.css'>
+
+---
+
+::
+    import {addcloze_multichoice_s} from './uiJS/cloze/multichoice.js';
+    import {addcloze_numerical} from './uiJS/cloze/numerical.js';
+    import {addcloze_shortanswer} from './uiJS/cloze/shortanswer.js';
+
+
+# Título
+
+
+```{r echo=FALSE}
+# Load three instructions.
+source("studyui.R")
+```
+
+
+
+```{r echo=FALSE}
+HTML("<p>Olá</p>")
+```
+
+
+
+```{r echo=FALSE}
+cloze("
+Complete o exemplo: 
+
+$438 = 4 \\times 10^X + 3 \\times 10^Y + 8 \\times 10^Z$
+
+sendo:
+
+* X = {:NUMERICAL:=2:0} 
+* Y = {:NUMERICAL:=1:0}
+* Z = {:NUMERICAL:=0:0}
+
+
+Adicionalmente,
+
+
+* 4 {:multichoice_s:=centenas\\~unidades\\~dezenas}
+* 3 {:multichoice_s:=dezenas\\~centenas\\~unidades}
+* 8 {:multichoice_s:=unidades\\~dezenas\\~centenas}
+
+", output="html")
+```
+
+
+
+
+```{r echo=FALSE}
+cloze("
+O desvio padrão corrigido é um estimador centrado para o desvio padrão do modelo populacional \\(\\sigma^2\\):
+
+(a) Justifique que $s_c^2$ é estritamente maior que $s^2$ mas nem sempre “muito maior”.
+
+(b) Com uma amostra de tamanho ‘2’, {:MULTICHOICE_S:%100%deve~%0%pode} ser usado o desvio padrão corrigido pois o desvio padrão corrigido é maior, ou bastante maior, que o desvio padrão não corrigido.
+
+Qualidade deste exercício para o estudo: {:MULTICHOICE_S:=útil\\~%100%não útil\\~%100%não compreendo\\~%100%acho que não tem solução}.
+
+
+", output="html")
+```
+
+
+
+
+```{r echo=FALSE}
+cloze("
+O desvio padrão corrigido é um estimador centrado para o desvio padrão do modelo populacional \\(\\sigma^2\\).
+
+(a) Justifique que \\(s_c^2\\) é estritamente maior que \\(s^2\\) mas nem sempre “muito maior”.
+
+(b) Com uma amostra de tamanho ‘2’, {:MULTICHOICE_S:%100%deve\\~%0%pode} ser usado o desvio padrão corrigido pois o desvio padrão corrigido é maior, ou bastante maior, que o desvio padrão não corrigido.
+
+
+
+5  {:MULTICHOICE_S:=A&#x007E;B}
+
+")
+```
+
+
+$$
+\begin{array}{cc}
+5 & A \\
+\end{array}
+$$
+
+
+
+
+
+
+```{r echo=FALSE}
+cloze("
+
+Considere um teste de hipóteses 
+unilateral à direita para a média \\(\\mu\\) de uma dada população Normal com variância conhecida.
+
+H0: \\(\\mu = 5\\) versus  H1: \\(\\mu > 5\\)
+
+Considerando
+
+* \\(z_\\text{{obs}]\\) = **2.3263**
+* valor-p = {:MULTICHOICE_S:%0%0.001\\~%0%0.05\\~%100%0.01\\~%0%0.3} = \\(P(Z \\ge  z_\\text{{obs}})\\),
+* \\(\\alpha\\) = **0.05**
+
+
+segue a conclusão é que
+
+* {:MULTICHOICE_S:%100%rejeita-se\\~%0%não se rejeita} a hipótese nula (H0) porque \\(\\alpha\\) {:MULTICHOICE_S:%100%é menor\\~%0%é maior} que o valor-p.
+
+Assim, a média populacional (ou valor esperado) \\(\\mu\\) {:MULTICHOICE_S:%100%é significativamente maior\\~%0%não é significativamente maior} que 5.")
+
+```
+

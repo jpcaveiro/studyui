@@ -1,0 +1,15 @@
+---
+title: "StudyUI Demonstration in quarto files"
+format: html
+include-in-header:
+  text:
+    <link rel="stylesheet" href="./uiJS/style.css"> 
+    <script type="module" src="./uiJS/studyui.js></script>
+---
+
+
+# Título
+
+
+
+ssss

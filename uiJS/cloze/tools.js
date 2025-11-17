@@ -136,3 +136,21 @@ export function mk_tooltip_divs() {
   return [tooltipContainer, tooltip];
 }
 
+/*
+  check if a string is anumber
+*/
+
+export function isStrictNumber(str) {
+  if (typeof str !== 'string') {
+    return false; // Not a string
+  }
+
+  if (str.trim() === "") {
+    return false; // Empty or whitespace only
+  }
+
+  // Use the unary plus operator to attempt conversion.  NaN will be returned if it fails.
+  const num = +str;
+
+  return typeof num === 'number' && !isNaN(num);
+}
